@@ -1,0 +1,174 @@
+# Forensic-AI 🔍
+
+An agentic RAG pipeline that audits SEC 10-K filings using LLMs. Ingests annual reports, retrieves relevant sections, and generates structured audit findings — flagging anomalies, risk signals, and inconsistencies a human auditor would care about.
+
+---
+
+## Architecture
+
+```
+10-K Filing (PDF/Text)
+        │
+        ▼
+┌─────────────────┐
+│   Ingestion     │  ← PDF parsing, section detection, chunking
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│   Embedding     │  ← Sentence-transformer embeddings per chunk
+│   + Vector DB   │  ← FAISS in-memory vector store
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│   RAG Retrieval │  ← Query per audit focus area → top-k chunks
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  LLM Analysis   │  ← Anthropic Claude audit reasoning
+│  (Agentic Loop) │  ← Multi-pass: findings → follow-up → score
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Structured JSON │  ← Risk score, severity flags, cited evidence
+│ + Markdown PDF  │  ← Human-readable audit report
+└─────────────────┘
+```
+
+---
+
+## Features
+
+- **Multi-section 10-K parsing** — detects Item 1A (Risk Factors), Item 7 (MD&A), Item 8 (Financial Statements), Notes, and more
+- **Semantic chunking** — splits documents into meaningful chunks, not fixed token windows
+- **FAISS vector search** — fast similarity retrieval across large filings
+- **Six audit focus areas** — risk factors, revenue anomalies, debt/liquidity, litigation, related-party transactions, forward guidance
+- **Agentic follow-up** — LLM can request additional context chunks before finalizing findings
+- **Structured output** — JSON findings with severity (HIGH/MEDIUM/LOW/INFO), section reference, flagged text, and recommendation
+- **Markdown report** — human-readable audit report with executive summary
+- **SEC EDGAR integration** — fetch real 10-K filings by ticker directly from EDGAR
+
+---
+
+## Quickstart
+
+```bash
+# Clone
+git clone https://github.com/yourusername/forensic-ai.git
+cd forensic-ai
+
+# Install
+pip install -r requirements.txt
+
+# Set API key
+export ANTHROPIC_API_KEY=your_key_here
+
+# Run on a sample filing
+python -m src.main --ticker AAPL --year 2023
+
+# Run on a local PDF
+python -m src.main --file data/sample_10k/apple_2023.pdf
+
+# Run with specific focus areas
+python -m src.main --ticker MSFT --focus risk_factors revenue litigation
+```
+
+---
+
+## Output
+
+```json
+{
+  "ticker": "AAPL",
+  "fiscal_year": "2023",
+  "risk_score": 62,
+  "audit_date": "2024-01-15",
+  "sections_reviewed": 6,
+  "total_chunks_analyzed": 48,
+  "summary": "Apple's 2023 10-K shows elevated concentration risk...",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "HIGH",
+      "section": "Item 1A — Risk Factors",
+      "title": "Revenue concentration in single product line",
+      "detail": "iPhone revenue represents ~52% of total revenue...",
+      "flagged_text": "iPhone net sales were $200.6 billion...",
+      "recommendation": "Monitor geographic and product diversification..."
+    }
+  ]
+}
+```
+
+---
+
+## Project Structure
+
+```
+forensic-ai/
+├── src/
+│   ├── main.py              # CLI entrypoint
+│   ├── pipeline.py          # Orchestrates full audit pipeline
+│   ├── ingestion/
+│   │   ├── loader.py        # PDF + text loading
+│   │   ├── chunker.py       # Semantic chunking
+│   │   └── section_detector.py  # 10-K section identification
+│   ├── retrieval/
+│   │   ├── embedder.py      # Sentence-transformer embeddings
+│   │   ├── vector_store.py  # FAISS vector DB
+│   │   └── retriever.py     # Query → top-k chunks
+│   ├── analysis/
+│   │   ├── auditor.py       # LLM audit reasoning (Anthropic)
+│   │   ├── focus_areas.py   # Audit focus area definitions + queries
+│   │   └── scorer.py        # Risk scoring logic
+│   └── output/
+│       ├── formatter.py     # JSON + Markdown report generation
+│       └── report.py        # Report writer
+├── data/
+│   └── sample_10k/          # Sample filings for testing
+├── tests/
+│   ├── test_ingestion.py
+│   ├── test_retrieval.py
+│   └── test_analysis.py
+├── docs/
+│   └── architecture.md
+├── requirements.txt
+├── .env.example
+├── .gitignore
+└── README.md
+```
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Language | Python 3.10+ |
+| LLM | Anthropic Claude (claude-sonnet-4-6) |
+| Embeddings | sentence-transformers (all-MiniLM-L6-v2) |
+| Vector DB | FAISS (in-memory) |
+| PDF Parsing | pdfplumber |
+| SEC Data | SEC EDGAR full-text API |
+| CLI | argparse |
+| Output | JSON + Markdown |
+
+---
+
+## Roadmap
+
+- [ ] Snowflake integration for persistent finding storage
+- [ ] AWS Lambda deployment for serverless pipeline
+- [ ] Multi-filing comparison (YoY delta analysis)
+- [ ] Streamlit dashboard UI
+- [ ] Support for 10-Q (quarterly) filings
+- [ ] Fine-tuned embedding model on financial language
+
+---
+
+## Disclaimer
+
+Forensic-AI is a research and educational tool. Findings are generated by an LLM and should not be used as the sole basis for investment or legal decisions. Always consult a qualified financial professional.
