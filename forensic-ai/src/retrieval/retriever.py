@@ -59,7 +59,9 @@ class Retriever:
             query_vecs = self.embedder.embed_queries(queries)
 
             # Batch search
-            all_results = self.vector_store.search_multi(query_vecs, k=k_per_query)
+            all_results = []
+            for qv in query_vecs:
+                all_results.append(self.vector_store.search(qv, k=k_per_query))
 
             # Deduplicate: keep best score per chunk_id
             seen: dict[str, dict] = {}
