@@ -7,7 +7,6 @@ Usage:
     python -m src.main --ticker MSFT --year 2023 --focus risk_factors revenue litigation
     python -m src.main --ticker GS --year 2023 --focus all --output-dir outputs/
 """
-
 import argparse
 import os
 import sys
