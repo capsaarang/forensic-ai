@@ -12,7 +12,6 @@ import os
 import sys
 
 from dotenv import load_dotenv
-
 load_dotenv()
 
 from .analysis.focus_areas import FOCUS_AREAS
